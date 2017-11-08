@@ -78,9 +78,11 @@ DistToWall:
 	OUT		SONAREN		;Enables Sensor 6 to find the distance to the wall
 	IN		DIST6
 	STORE	WALLDIST	;Stores the distance to WALLDIST
+	OUT		LCD			;Outs to LCD
 	LOAD	MAXLEN
 	SUB		WALLDIST	
 	STORE	MAX1		;Get approximate distance sonar 1 is from the end of the zone
+	OUT		LCD
 
 ;Resets the Sonar sensor and sets up the bot for detection	
 InitDetect:		
@@ -90,44 +92,51 @@ InitDetect:
 	CALL 	MAKEMASK
 	OUT 	SONAREN
 	CALL	UpdateDist
+	LOADI	0
+	OUT 	TIMER
 	
 	
 	
 ;Running loop for intruder detection
 DetectIntruder:
+	
+; 	IN     XIO         ; XIO contains KEYs
+; 	AND    Mask2       ; KEY3 mask (KEY0 is reset and can't be read)
+; 	JPOS   WaitForUser ; not ready (KEYs are active-low, hence JPOS)
+	
 	CALL	CmpDist
 	JPOS	Alarm
 	JUMP	DetectIntruder
 	
 Alarm:
-	LOAD	IBEEP
+	
+	LOADI	&H0120
 	OUT		BEEP
+	OUT		TIMER
+	CALL	Wait1
 	JUMP	DetectIntruder
 	
-	
-
 
 	
 ;Subroutine Puts the mask into the accumulator
 MAKEMASK:	
-	LOAD	Mask1
-	OR		Mask2
+;  	LOAD	Mask1
+	LOAD		Mask2
 	OR		Mask3
 	OR		Mask6
 	RETURN
 
 ;Update distances and compare 
 UpdateDist:
-	IN 		DIST1
-	STORE	DIST1P
+; 	IN 		DIST1
+; 	STORE	DIST1P
 	IN		DIST2
 	STORE	DIST2P
 	IN		DIST3
 	STORE	DIST3P
-	IN		DIST4
-	STORE	DIST4P
 	IN		DIST6
 	STORE	DIST6P
+	
 	RETURN
 	
 	
@@ -135,29 +144,26 @@ UpdateDist:
 CmpDist:
 	;For sensor 1, if the distance is anything less than the distance
 		;to the end of the zone we calculated, flag the alert in the AC
-	IN		DIST1
-	SUB		MAX1
-	JNEG	Cmp_alert
 	
-	;For sensors 2,3,4 and 6, we check the distance against the previous recorded distance 	
-		;then, it checks if the absolute change is greater than our specified margin of error
-	IN		DIST2
-	SUB		DIST2P
-	CALL	Abs
-	SUB		DELTAX
-	JPOS	Cmp_alert
+
+; 	IN		DIST1
+; 	SUB		MAX1
+; 	JNEG	Cmp_alert
+ 	
 	
-	IN		DIST3
-	SUB		DIST3P
-	CALL	Abs
-	SUB		DELTAX
-	JPOS	Cmp_alert
-	
-	IN		DIST4
-	SUB		DIST4P
-	CALL	Abs
-	SUB		DELTAX
-	JPOS	Cmp_alert
+; 	;For sensors 2,3,4 and 6, we check the distance against the previous recorded distance 	
+; 		;then, it checks if the absolute change is greater than our specified margin of error
+; 	IN		DIST2
+; 	SUB		DIST2P
+; 	CALL	Abs
+; 	SUB		DELTAX
+; 	JPOS	Cmp_alert
+; 	
+; 	IN		DIST3
+; 	SUB		DIST3P
+; 	CALL	Abs
+; 	SUB		DELTAX
+; 	JPOS	Cmp_alert
 	
 	IN		DIST6
 	SUB		DIST6P
@@ -165,13 +171,22 @@ CmpDist:
 	SUB		DELTAX
 	JPOS	Cmp_alert
 	
+	LOAD	WALLDIST
+	OUT		LCD
+	
 	LOADI 	0	;Load zero if no significant change detected
 	
 Cmp_r:
+
 	RETURN
 
 Cmp_alert:
+; 	LOAD	MAX1
+; 	OUT 	LCD
 	LOADI	1	;Load 1 if significant change is detected
+				
+	
+	
 	JUMP	Cmp_r
 		
 	
@@ -181,7 +196,7 @@ MAXLEN:		DW 	7289			;MAX LENGTH of the entire test area
 
 MAX1:		DW	&H0000			;Approximate distance sonar1 is away from the end of the area.
 
-DELTAX:		DW	5				;constant to check margin of error
+DELTAX:		DW	5000				;constant to check margin of error
 
 WALLDIST:	DW 	&H0000			; Distance Sonar 6 is from the wall
 
@@ -192,7 +207,7 @@ DIST3P:		DW	&H0000
 DIST4P:		DW	&H0000
 DIST6P:		DW 	&H0000
 
-IBEEP:		DW	&H0811		;Variable for BeepOnIntruder		;fix this later
+IBEEP:		DW	&H0830		;Variable for BeepOnIntruder		;fix this later
 
 
 ;;END OF MODE 0 CODE
