@@ -78,23 +78,22 @@ DistToWall:
 	OUT		SONAREN		;Enables Sensor 6 to find the distance to the wall
 	IN		DIST6
 	STORE	WALLDIST	;Stores the distance to WALLDIST
-	OUT		LCD			;Outs to LCD
+	;Outs to LCD
 	LOAD	MAXLEN
 	SUB		WALLDIST	
 	STORE	MAX1		;Get approximate distance sonar 1 is from the end of the zone
-	OUT		LCD
 
 ;Resets the Sonar sensor and sets up the bot for detection	
 InitDetect:		
-	LOAD	ZERO
-	OUT 	SONAREN
+; 	LOAD	ZERO
+; 	OUT 	SONAREN
 	
 	CALL 	MAKEMASK
 	OUT 	SONAREN
+	CALL	Wait1
 	CALL	UpdateDist
 	LOADI	0
-	OUT 	TIMER
-	
+	OUT 	TIMER	
 	
 	
 ;Running loop for intruder detection
@@ -106,6 +105,8 @@ DetectIntruder:
 	
 	CALL	CmpDist
 	JPOS	Alarm
+AfterBeep:
+	CALL	Wait1
 	JUMP	DetectIntruder
 	
 Alarm:
@@ -113,10 +114,7 @@ Alarm:
 	LOADI	&H0120
 	OUT		BEEP
 	OUT		TIMER
-	CALL	Wait1
-	JUMP	DetectIntruder
-	
-
+	JUMP	AfterBeep
 	
 ;Subroutine Puts the mask into the accumulator
 MAKEMASK:	
@@ -137,7 +135,10 @@ UpdateDist:
 	IN		DIST6
 	STORE	DIST6P
 	
+	
 	RETURN
+	
+
 	
 	
 ;Compare Distances by checking distance between them. Returns 1 if the distance change is significant
@@ -166,13 +167,15 @@ CmpDist:
 ; 	JPOS	Cmp_alert
 	
 	IN		DIST6
+	OUT		LCD
 	SUB		DIST6P
 	CALL	Abs
+
 	SUB		DELTAX
 	JPOS	Cmp_alert
 	
-	LOAD	WALLDIST
-	OUT		LCD
+; 	LOAD	WALLDIST
+; 	OUT		LCD
 	
 	LOADI 	0	;Load zero if no significant change detected
 	
@@ -183,10 +186,7 @@ Cmp_r:
 Cmp_alert:
 ; 	LOAD	MAX1
 ; 	OUT 	LCD
-	LOADI	1	;Load 1 if significant change is detected
-				
-	
-	
+	LOADI	1	;Load 1 if significant change is detected	
 	JUMP	Cmp_r
 		
 	
@@ -196,7 +196,7 @@ MAXLEN:		DW 	7289			;MAX LENGTH of the entire test area
 
 MAX1:		DW	&H0000			;Approximate distance sonar1 is away from the end of the area.
 
-DELTAX:		DW	5000				;constant to check margin of error
+DELTAX:		DW	400				;constant to check margin of error
 
 WALLDIST:	DW 	&H0000			; Distance Sonar 6 is from the wall
 
