@@ -191,7 +191,7 @@ Cmp_alert:
 	
 
 ;Constants & Variables
-MAXLEN:		DW 	3810		;MAX LENGTH of the entire test area
+MAXLEN:		DW 	3810		;MAX LENGTH of the entire test area   ;EDIT BEFORE RUNNING
 
 MAX1:		DW	&H0000			;Approximate distance sonar1 is away from the end of the area.
 
