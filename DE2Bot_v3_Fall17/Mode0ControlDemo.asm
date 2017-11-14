@@ -66,8 +66,7 @@ WaitForUser:
 ;***************************************************************
 Main:
 	OUT    RESETPOS    ; reset odometer in case wheels moved after programming
-	
-	
+
 ;THIS CODE IS FOR MODE0. MODE SELECT NOT YET IMPLEMENTED	
 	
 	
@@ -76,12 +75,18 @@ Main:
 DistToWall:		
 	LOAD 	Mask6		
 	OUT		SONAREN		;Enables Sensor 6 to find the distance to the wall
+	CALL   Wait1
 	IN		DIST6
 	STORE	WALLDIST	;Stores the distance to WALLDIST
 	;Outs to LCD
 	LOAD	MAXLEN
-	SUB		WALLDIST	
+	SUB		WALLDIST
 	STORE	MAX1		;Get approximate distance sonar 1 is from the end of the zone
+	OUT		LCD	
+	CALL	Wait1
+	LOADI  &H250
+	OUT    BEEP        ; Short hello beep
+	
 
 ;Resets the Sonar sensor and sets up the bot for detection	
 InitDetect:		
@@ -97,37 +102,30 @@ InitDetect:
 	
 	
 ;Running loop for intruder detection
-DetectIntruder:
-	
-; 	IN     XIO         ; XIO contains KEYs
-; 	AND    Mask2       ; KEY3 mask (KEY0 is reset and can't be read)
-; 	JPOS   WaitForUser ; not ready (KEYs are active-low, hence JPOS)
-	
+DetectIntruder:	
 	CALL	CmpDist
 	JPOS	Alarm
 AfterBeep:
-	CALL	Wait1
+; 	CALL	Wait1
 	JUMP	DetectIntruder
 	
 Alarm:
-	
 	LOADI	&H0120
 	OUT		BEEP
-	OUT		TIMER
 	JUMP	AfterBeep
 	
 ;Subroutine Puts the mask into the accumulator
 MAKEMASK:	
-;  	LOAD	Mask1
-	LOAD		Mask2
+ 	LOAD	Mask1
+	OR		Mask2
 	OR		Mask3
 	OR		Mask6
 	RETURN
 
 ;Update distances and compare 
 UpdateDist:
-; 	IN 		DIST1
-; 	STORE	DIST1P
+	IN 		DIST1
+	STORE	DIST1P
 	IN		DIST2
 	STORE	DIST2P
 	IN		DIST3
@@ -147,27 +145,28 @@ CmpDist:
 		;to the end of the zone we calculated, flag the alert in the AC
 	
 
-; 	IN		DIST1
-; 	SUB		MAX1
-; 	JNEG	Cmp_alert
+	IN		DIST1
+	OUT 	LCD
+	SUB		MAX1
+	ADD		DELTAX
+	JNEG	Cmp_alert
  	
 	
 ; 	;For sensors 2,3,4 and 6, we check the distance against the previous recorded distance 	
 ; 		;then, it checks if the absolute change is greater than our specified margin of error
-; 	IN		DIST2
-; 	SUB		DIST2P
-; 	CALL	Abs
-; 	SUB		DELTAX
-; 	JPOS	Cmp_alert
-; 	
-; 	IN		DIST3
-; 	SUB		DIST3P
-; 	CALL	Abs
-; 	SUB		DELTAX
-; 	JPOS	Cmp_alert
+	IN		DIST2
+	SUB		DIST2P
+	CALL	Abs
+	SUB		DELTAX
+	JPOS	Cmp_alert
+	
+	IN		DIST3
+	SUB		DIST3P
+	CALL	Abs
+	SUB		DELTAX
+	JPOS	Cmp_alert
 	
 	IN		DIST6
-	OUT		LCD
 	SUB		DIST6P
 	CALL	Abs
 
@@ -192,11 +191,11 @@ Cmp_alert:
 	
 
 ;Constants & Variables
-MAXLEN:		DW 	7289			;MAX LENGTH of the entire test area
+MAXLEN:		DW 	3810		;MAX LENGTH of the entire test area
 
 MAX1:		DW	&H0000			;Approximate distance sonar1 is away from the end of the area.
 
-DELTAX:		DW	400				;constant to check margin of error
+DELTAX:		DW	127				;constant to check margin of error
 
 WALLDIST:	DW 	&H0000			; Distance Sonar 6 is from the wall
 
